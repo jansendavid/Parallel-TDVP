@@ -667,7 +667,8 @@ phi1 /= norm(phi1);
 		//  
 		//	std::cout<< "Pri 11111"<< V<<std::endl;
 		//energy = davidson(PH,phi,{args,"MaxIter=",boundary_niter});
-			applyExp(PH,phi,t,args);
+			applyExp(PH,phi,t/2,args);
+			applyExp(PH,phi,t/2,args);
 		//energy = davidson(PH,phi,args);
 			//			std::cout<< "norm s "<< norm(phi)<<std::endl; 
 if(DoNormalize)
