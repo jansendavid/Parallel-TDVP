@@ -14,10 +14,10 @@ int main(int argc, char* argv[])
   MPS psi;
   MPS psi0;
   MPO H;
-  int N = 50; //number of sites
+  int N = 500; //number of sites
   Real tstep = 0.02; //time step (smaller is generally more accurate)
-  Real ttotal = 1.0; //total time to evolve
-  Real cutoff = 1E-8; //truncation error cutoff when restoring MPS form
+  Real ttotal = 8.0; //total time to evolve
+  Real cutoff = 1E-9; //truncation error cutoff when restoring MPS form
   int steps=ttotal/tstep;
     Sweeps sweeps;
 	 Args argsMPS=itensor::Args("Cutoff=",cutoff,"Truncate", true,"DoNormalize",false,"SVDMethod=","gesdd");
@@ -55,7 +55,7 @@ int main(int argc, char* argv[])
   //Save initial state;
    psi0 = psi;
  // write to file
-file.open("data/overlap_p2tdvp.csv", std::ofstream::trunc);
+file.open("data/correlfunc_p2tdvp.csv", std::ofstream::trunc);
   file<<"#time,real,imag"<<std::endl;	
 }
  
@@ -79,10 +79,43 @@ file.open("data/overlap_p2tdvp.csv", std::ofstream::trunc);
    gather_vector(env,P, psi_new, Vs);
     if(env.firstNode())
        	    	     {
-  Print(innerC(psi_new,psi0));
-      std::complex<double> overlap=innerC(psi_new,psi0);
-       file<<i*tstep<<","<<overlap.real() << ","<< overlap.imag()<<std::endl;    
-   std::cout<< i*tstep<<std::endl;
+		       int site_1=N/2;
+		       int site_2=site_1+1;
+		      auto op_1 = op(sites,"Sz",site_1);
+		       auto op_2 = op(sites,"Sz",site_2);
+		       //'gauge' the MPS to site i
+		       //any 'position' between i and j, inclusive, would work here
+		       psi_new.position(site_1); 
+
+		       //Create the bra/dual version of the MPS psi
+		       auto psidag_new = dag(psi_new);
+
+		       //Prime the link indices to make them distinct from
+		       //the original ket links
+		       psidag_new.prime("Link");
+
+		       //index linking i-1 to i:
+		       auto li_1 = leftLinkIndex(psi_new,site_1);
+
+		       auto C = prime(psi_new(site_1),li_1)*op_1;
+		       C *= prime(psidag_new(site_1),"Site");
+		       for(int k = site_1+1; k < site_2; ++k)
+			 {
+			   C *= psi_new(k);
+			   C *= psidag_new(k);
+			 }
+		       //index linking j to j+1:
+		       auto li_2 = rightLinkIndex(psi_new,site_2);
+
+		       C *= prime(psi_new(site_2),li_2)*op_2;
+		       C *= prime(psidag_new(site_2),"Site");
+
+		       auto result = eltC(C);
+		       Print(innerC(psi_new,psi0));
+		       Print(result);
+		      
+		       file<<i*tstep<<","<<result.real() << ","<< result.imag()<<std::endl;    
+		       std::cout<< i*tstep<<std::endl;
  		     }
  Act(env,P,psi,Vs,PH,sweeps,obs,-tstep*Cplx_i, argsMPS, first);
 //   printfln("Maximum MPS bond dimension after time evolution is %d",maxLinkDim(psi));
