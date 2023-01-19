@@ -14,9 +14,9 @@ int main(int argc, char* argv[])
   MPS psi;
   MPS psi0;
   MPO H;
-  int N = 500; //number of sites
-  Real tstep = 0.02; //time step (smaller is generally more accurate)
-  Real ttotal = 8.0; //total time to evolve
+  int N = 10; //number of sites
+  Real tstep = 0.01; //time step (smaller is generally more accurate)
+  Real ttotal = 1.0; //total time to evolve
   Real cutoff = 1E-9; //truncation error cutoff when restoring MPS form
   int steps=ttotal/tstep;
     Sweeps sweeps;
@@ -41,7 +41,24 @@ int main(int argc, char* argv[])
     {
       state.set(j,j%2==1?"Up":"Dn");
     }
-  psi = MPS(state);
+  // make a non product state the initial state
+  auto psi_in = MPS(state);
+  auto sweeps_gs = Sweeps(5); //number of sweeps is 5
+  sweeps_gs.maxdim() = 10,20,100,100,200;
+  sweeps.cutoff() = 1E-10;
+  auto ampo_in = AutoMPO(sites);
+  for(int j = 1; j < N; ++j)
+    {
+      ampo_in += 0.5,"S+",j,"S-",j+1;
+      ampo_in += 0.5,"S-",j,"S+",j+1;
+      
+    }
+  auto H_in = toMPO(ampo_in);
+  auto [energy,psi_gs] = dmrg(H_in,psi_in,sweeps_gs);
+
+  println("Ground State Energy = ",energy);
+
+
   auto ampo = AutoMPO(sites);
   for(int j = 1; j < N; ++j)
     {
@@ -51,7 +68,7 @@ int main(int argc, char* argv[])
     }
   H = toMPO(ampo);
 
-
+ psi=psi_gs;
   //Save initial state;
    psi0 = psi;
  // write to file
@@ -116,9 +133,10 @@ file.open("data/correlfunc_p2tdvp.csv", std::ofstream::trunc);
 		      
 		       file<<i*tstep<<","<<result.real() << ","<< result.imag()<<std::endl;    
 		       std::cout<< i*tstep<<std::endl;
+   printfln("Maximum MPS bond dimension after time evolution is %d",maxLinkDim(psi_new));
  		     }
  Act(env,P,psi,Vs,PH,sweeps,obs,-tstep*Cplx_i, argsMPS, first);
-//   printfln("Maximum MPS bond dimension after time evolution is %d",maxLinkDim(psi));
+
       	   	if(first)
       	  {
    
