@@ -3,6 +3,8 @@ include $(LIBRARY_DIR)/this_dir.mk
 include $(LIBRARY_DIR)/options.mk
 INC+=-I${ITENSOR}
 INC+=-I$(PWD)/include
+# link paralle dmrg directory
+INC+=-I$(PDMRG)/
 
 LIBSPATH=-L$(ITENSOR)/lib
 LIBSPATH+=$(LIBSLINK)
