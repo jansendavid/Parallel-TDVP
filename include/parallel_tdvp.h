@@ -172,11 +172,11 @@ Act(Environment const& env,
 
 	      applyExp(PH,phi1,t/2,args);
       
-		 if(DoNormalize)
+/* 		 if(DoNormalize) */
 	      
-		   {
-phi1 /= norm(phi1);
-		   }
+/* 		   { */
+/* phi1 /= norm(phi1); */
+/* 		   } */
 	     auto energy=0;
             auto spec = psi.svdBond(j,phi1,dir,PH,args);
             
@@ -206,9 +206,9 @@ phi1 /= norm(phi1);
  
 				       applyExp(PH,phi0,-t/2,args);
 				
-                 if(DoNormalize)
-		   {		       	          phi0 /= norm(phi0);
-		   }
+                 /* if(DoNormalize) */
+		 /*   {		       	          phi0 /= norm(phi0); */
+		 /*   } */
               
 		        psi.ref(b1) = phi0;
               
@@ -226,9 +226,9 @@ phi1 /= norm(phi1);
  
 		           applyExp(PH,phi0,-t/2,args);
 		
-                 if(DoNormalize)
-		   {	    phi0 /= norm(phi0);
-		   }
+                 /* if(DoNormalize) */
+		 /*   {	    phi0 /= norm(phi0); */
+		 /*   } */
                 
       
 		        psi.ref(b1) = phi0;
@@ -256,16 +256,28 @@ phi1 /= norm(phi1);
                  auto phi = psi.A(n)*V*psi.A(n+1); 
 	
  			applyExp(PH,phi,t/2,args); 
- 			applyExp(PH,phi,t/2,args); 
-		
-/* if(DoNormalize) */
-/* 		  { */
-/* 				phi /= norm(phi); */
-/* 		  } */
+
+ /* if(DoNormalize)  */
+ /* 		  {  */
+ /* 		     				phi /= norm(phi);  */
+ /* 		  }  */
 		
  				auto spec = isvd(phi,psi.Aref(n),V,psi.Aref(n+1), args); 
 			
+				////////////////////////////////////////////
+				// time evolve twice for small bond dimension on bonds
 
+                 phi = psi.A(n)*V*psi.A(n+1); 
+	
+ 			applyExp(PH,phi,t/2,args); 
+
+ /* if(DoNormalize)  */
+ /* 		  {  */
+ /* 		     				phi /= norm(phi);  */
+ /* 		  }  */
+		
+ 			        spec = isvd(phi,psi.Aref(n),V,psi.Aref(n+1), args); 
+  /////////////////////////////////////////////////
 		
                 B.HH = PH.L();
                 B.UU = psi.A(n)*V;
@@ -288,11 +300,11 @@ phi1 /= norm(phi1);
  
 				       applyExp(PH,phi0,-t/2,args);
 				       //
-                if(DoNormalize)
-		  {
-		       		        	          phi0 /= norm(phi0);
+                /* if(DoNormalize) */
+		/*   { */
+		/*       		        	          phi0 /= norm(phi0); */
                 
-		  }
+		/*   } */
                
 		        psi.ref(n) = phi0;
                   } 
@@ -323,10 +335,10 @@ phi1 /= norm(phi1);
       PH.position(n+1,psi);
       
       applyExp(PH,phi0,-t/2,args);
-       if(DoNormalize)
-		  {
-	       	          phi0 /= norm(phi0);
-		  }
+       /* if(DoNormalize) */
+       /* 		  { */
+       /* 		        phi0 /= norm(phi0); */
+       /* 		  } */
                 // if(numCenter == 2)
                 //     {
 		        psi.ref(n+1) = phi0;

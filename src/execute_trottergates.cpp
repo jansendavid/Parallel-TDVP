@@ -6,42 +6,24 @@ using std::vector;
 
 int main()
 {
-  int N = 10; //number of sites
+
   Real tstep = 0.01; //time step (smaller is generally more accurate)
-  Real ttotal = 1.0; //total time to evolve
-  Real cutoff = 1E-9; //truncation error cutoff when restoring MPS form
+  Real ttotal = 6.0; //total time to evolve
+  Real cutoff = 1E-10; //truncation error cutoff when restoring MPS form
   int steps=ttotal/tstep;
+
+
+  //Make initial MPS psi to be in the Neel state
+
+  auto f_mps = h5_open("initial_state.h5",'r'); //open HDF5 file in read 'r' mode
+  auto psi = h5_read<MPS>(f_mps,"MPS_initial");
+
+  int N = length(psi); //number of sites
   //Define a site set object "sites" which lets us
   //easily obtain Site indices defining our Hilbert space
   //and S=1/2 single-site operators
-  auto sites = SpinHalf(N);
-
-  //Make initial MPS psi to be in the Neel state
+  auto sites = SpinHalf(siteInds(psi));
   auto state = InitState(sites);
-
-  auto sweeps = Sweeps(5); //number of sweeps is 5
-  sweeps.maxdim() = 10,20,100,100,200;
-  sweeps.cutoff() = 1E-10;
-  auto ampo_in = AutoMPO(sites);
-  for(auto j : range1(N))
-    {
-      state.set(j,j%2==1?"Up":"Dn");
-    }
-auto psi_in = MPS(state);
-  //auto psi_in = randomMPS(state);
-  for(int j = 1; j < N; ++j)
-    {
-      ampo_in += 0.5,"S+",j,"S-",j+1;
-      ampo_in += 0.5,"S-",j,"S+",j+1;
-      
-    }
-  auto H_in = toMPO(ampo_in);
-  auto [energy,psi_gs] = dmrg(H_in,psi_in,sweeps);
-
-  println("Ground State Energy = ",energy);
-
-auto  psi=psi_gs;
-
   //Create a std::vector (dynamically sizeable array)
   //to hold the Trotter gates
   auto gates = vector<BondGate>();
@@ -119,7 +101,7 @@ auto  psi=psi_gs;
       Print(innerC(psi,psi0));
 
       file<<i*tstep<<","<<result.real() << ","<< result.imag()<<std::endl;    
-      gateTEvol(gates,tstep,tstep,psi,{"Cutoff=",cutoff,"Verbose=",true});
+      gateTEvol(gates,tstep,tstep,psi,{"Cutoff=",cutoff,"Verbose=",true,  "MaxDim=",1000});
 
   printfln("Maximum MPS bond dimension after time evolution is %d",maxLinkDim(psi));
 

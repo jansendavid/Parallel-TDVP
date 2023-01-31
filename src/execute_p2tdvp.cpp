@@ -14,14 +14,14 @@ int main(int argc, char* argv[])
   MPS psi;
   MPS psi0;
   MPO H;
-  int N = 10; //number of sites
+  int N{0};
   Real tstep = 0.01; //time step (smaller is generally more accurate)
-  Real ttotal = 1.0; //total time to evolve
-  Real cutoff = 1E-9; //truncation error cutoff when restoring MPS form
+  Real ttotal = 6.0; //total time to evolve
+  Real cutoff = 1E-10; //truncation error cutoff when restoring MPS form
   int steps=ttotal/tstep;
     Sweeps sweeps;
 	 Args argsMPS=itensor::Args("Cutoff=",cutoff,"Truncate", true,"DoNormalize",false,"SVDMethod=","gesdd");
- auto sites = SpinHalf(N);
+	 SiteSet sites;
   std::ofstream file;
   //Define a site set object "sites" which lets us
   //easily obtain Site indices defining our Hilbert space
@@ -32,31 +32,18 @@ int main(int argc, char* argv[])
      sweeps = Sweeps(1);
     sweeps.cutoff() = cutoff;
     sweeps.niter() = 10;
-    
+    sweeps.maxdim()=1000;    
 
 
-  //Make initial MPS psi to be in the Neel state
-  auto state = InitState(sites);
-  for(auto j : range1(N))
-    {
-      state.set(j,j%2==1?"Up":"Dn");
-    }
-  // make a non product state the initial state
-  auto psi_in = MPS(state);
-  auto sweeps_gs = Sweeps(5); //number of sweeps is 5
-  sweeps_gs.maxdim() = 10,20,100,100,200;
-  sweeps.cutoff() = 1E-10;
-  auto ampo_in = AutoMPO(sites);
-  for(int j = 1; j < N; ++j)
-    {
-      ampo_in += 0.5,"S+",j,"S-",j+1;
-      ampo_in += 0.5,"S-",j,"S+",j+1;
-      
-    }
-  auto H_in = toMPO(ampo_in);
-  auto [energy,psi_gs] = dmrg(H_in,psi_in,sweeps_gs);
+  auto f_mps = h5_open("initial_state.h5",'r'); //open HDF5 file in read 'r' mode
+   psi = h5_read<MPS>(f_mps,"MPS_initial");
 
-  println("Ground State Energy = ",energy);
+   N = length(psi); //number of sites
+  //Define a site set object "sites" which lets us
+  //easily obtain Site indices defining our Hilbert space
+  //and S=1/2 single-site operators
+   sites = SpinHalf(siteInds(psi));
+  
 
 
   auto ampo = AutoMPO(sites);
@@ -68,7 +55,7 @@ int main(int argc, char* argv[])
     }
   H = toMPO(ampo);
 
- psi=psi_gs;
+ 
   //Save initial state;
    psi0 = psi;
  // write to file
@@ -102,7 +89,11 @@ file.open("data/correlfunc_p2tdvp.csv", std::ofstream::trunc);
 		       auto op_2 = op(sites,"Sz",site_2);
 		       //'gauge' the MPS to site i
 		       //any 'position' between i and j, inclusive, would work here
+
+
 		       psi_new.position(site_1); 
+		       Print(norm(psi_new));
+		       psi_new.normalize();
 
 		       //Create the bra/dual version of the MPS psi
 		       auto psidag_new = dag(psi_new);
@@ -129,6 +120,7 @@ file.open("data/correlfunc_p2tdvp.csv", std::ofstream::trunc);
 
 		       auto result = eltC(C);
 		       Print(innerC(psi_new,psi0));
+		       Print(norm(psi_new));
 		       Print(result);
 		      
 		       file<<i*tstep<<","<<result.real() << ","<< result.imag()<<std::endl;    
